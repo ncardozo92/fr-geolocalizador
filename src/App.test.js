@@ -1,4 +1,4 @@
-import { render, fireEvent, waitFor } from '@testing-library/react';
+import { render, fireEvent, waitFor, screen, findByText } from '@testing-library/react';
 import axios from 'axios';
 import App from './App';
 
@@ -8,7 +8,7 @@ beforeEach(() => {
   axiosMock = jest.spyOn(axios, "get");
 });
 
-test("Consultamos exitosamente una IP",() => {
+test("Consultamos exitosamente una IP", async () => {
 
   const container = render(<App/>).container;
   
@@ -21,7 +21,7 @@ test("Consultamos exitosamente una IP",() => {
       "ip": "127.0.0.1",
       "country_code": "BR",
       "country_name": "Brasil",
-      "distance": 2046.0,
+      "distance": 2046,
       "languages": [
           {
               "code": "pt",
@@ -36,20 +36,22 @@ test("Consultamos exitosamente una IP",() => {
   fireEvent(ipInput, new InputEvent("change"));
   fireEvent(submitButton, new MouseEvent("click"));
 
-  waitFor(() => {
+  await waitFor(() => {
     expect(axiosMock).toHaveBeenCalled();
-    expect(container.querySelector(".results")).toBeInTheDocument();
-    expect(container.querySelector(".ip")).toBeInTheDocument();
-    expect(container.querySelector(".date")).toBeInTheDocument();
-    expect(container.querySelector(".country")).toBeInTheDocument();
-    expect(container.querySelector(".distance")).toBeInTheDocument();
-    expect(container.querySelector(".language").length).toBe(1);
-    expect(container.querySelector("ErrorAlert")).not.toBeInTheDocument();
   });
+
+  const ipLabel = await screen.findByText("IP: 127.0.0.1");
+  const dateLabel = await screen.findByText("Fecha: 2021-11-01T21:11:27.297290700");
+  const countryLabel = await screen.findByText("País: Brasil, ISO code: BR");
+  const distanceLabel = await screen.findByText("Distancia entre Buenos Aires (aprox.): 2046");
   
+  expect(ipLabel).toBeInTheDocument();
+  expect(dateLabel).toBeInTheDocument();
+  expect(countryLabel).toBeInTheDocument();
+  expect(distanceLabel).toBeInTheDocument();
 });
 
-test("Consultamos la ip pero recibimos un status code 502",() =>{
+test("Consultamos la ip pero recibimos un status code 502", async () =>{
 
   const container = render(<App/>).container;
   
@@ -62,9 +64,11 @@ test("Consultamos la ip pero recibimos un status code 502",() =>{
   fireEvent(ipInput, new InputEvent("change"));
   fireEvent(submitButton, new MouseEvent("click"));
 
-  waitFor(() => {
+  await waitFor(() => {
     expect(axiosMock).toHaveBeenCalled();
-    expect(container.querySelector("ErrorAlert")).toBeInTheDocument();
   });
+
+  const alert = await screen.findByRole("alert");
+  expect(alert).toBeInTheDocument();
 });
 
